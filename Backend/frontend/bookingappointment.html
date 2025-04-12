@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Booking Appointment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Healthcare System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="dashboard.html">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="profile.html">Profile</a>
+                    </li>
+                    <li class="nav-item"></li>
+                        <a class="nav-link" href="doctorlist.html">Our Doctor</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="bookingappointment.html">Booking</a>
+                    </li>
+                    <!-- Add Sign-Up and Sign-In links -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="signup.html">Sign Up</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="signin.html">Sign In</a>
+                    </li>
+                   
+                </ul>
+                <form class="d-flex ms-3">
+                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                    <button class="btn btn-light" type="submit">Search</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+<div class="container py-5">
+    <h2 class="text-center mb-4">Health Registration Form</h2>
+    <div class="alert alert-warning mb-4">
+        <strong>Note:</strong> Please check the doctor's available time and days carefully to avoid clashes ( checkout the list from the navbar ). Please ensure that you are providing the correct information!
+    </div>
+    <form class="bg-light px-10 py-5 small-form" id="bookingForm"> 
+        <p class="text-warning fw-semibold text-center mt-2">
+            Note: You can schedule your appointment only for <strong>tomorrow</strong>. Please select a slot accordingly.
+        </p>
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input required type="text" class="form-control" id="name" placeholder="Enter your name">
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label w-90">Email</label>
+            <input required type="email" class="form-control" id="email" placeholder="Enter your email">
+        </div>
+        <div class="mb-3 ">
+            <label for="phone" class="form-label">Phone Number</label>
+            <input required type="tel" class="form-control" id="phone" placeholder="Enter your phone number">
+        </div>
+        <div class="mb-3">
+            <label for="dob" class="form-label">Date of Birth</label>
+            <input required type="date" class="form-control" id="dob">
+        </div>
+        <div class="mb-3">
+            <label for="address" class="form-label">Address</label>
+            <textarea required class="form-control" id="address" rows="3" placeholder="Enter your address"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="doctorSelect" class="form-label">Select Doctor</label>
+            <select required class="form-control" id="doctorSelect">
+                <option value="">Select a Doctor</option>
+            </select>
+            <!-- <div id="slotsContainer">
+                <p>Select a doctor to view available slots.</p>
+            </div> -->
+            
+            <div id="slotsContainer" class="d-flex flex-wrap gap-2 justify-content-center mt-3"></div>
+           
+            <p id="selectedSlot" class="text-success fw-bold text-center mt-3"></p>
+            
+
+        </div>
+        <div class="mb-3">
+            <label for="visitReason" class="form-label">Brief Description of Visiting Reason</label>
+            <textarea required class="form-control" id="visitReason" rows="3" placeholder="Enter brief description of visiting reason"></textarea>
+        </div>
+        
+        <div class="text-center"> <!-- Added a div to center the button -->
+            <button type="submit" class="btn btn-primary">Register</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .small-form {
+        max-width: 550px; /* Set the desired width */
+        margin: auto; /* Center the form */
+        padding: 20px;
+    }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // console.log("Page loaded, calling fetchDoctors...");
+        fetchDoctors();
+        document.getElementById("doctorSelect").addEventListener("change", function () {
+        const doctorId = this.value; // Selected doctor ID
+        if (doctorId) {
+            fetchSlots(doctorId);
+        } else {
+            document.getElementById("slotsContainer").innerHTML = "<p>Please select a doctor.</p>";
+        }
+    });
+    });
+
+    async function fetchDoctors() {
+    try {
+        // console.log("Fetching doctors...");
+        const response = await fetch("http://localhost:5000/api/doctorlist/doctors"); // Check API URL
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch doctors: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("API Response:", data.data); // Log full response to check format
+
+        const doctorSelect = document.getElementById("doctorSelect");
+        doctorSelect.innerHTML = '<option value="">Select a Doctor</option>'; // Reset dropdown
+
+        data.data.forEach(doctor => {
+            const option = document.createElement("option");
+            option.value = doctor._id;
+            option.textContent = `${doctor.name} - ${doctor.specialty}`;
+            doctorSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error("Error fetching doctor list:", error);
+    }
+}
+
+
+let selectedSlotID = null;
+let selectedSlotTime = null;
+
+
+    document.getElementById("bookingForm").addEventListener("submit", async function (event) {
+        event.preventDefault(); // Prevent default form submission
+        const userID = localStorage.getItem("userID")
+
+        const doctorSelect = document.getElementById("doctorSelect");
+        const selectedDoctorId = doctorSelect.value;
+        const selectedDoctorName = doctorSelect.options[doctorSelect.selectedIndex].text;
+
+        const requestData = {
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            phonenumber: document.getElementById("phone").value,
+            dateOfBirth: document.getElementById("dob").value,
+            address: document.getElementById("address").value,
+            doctorId: selectedDoctorId,
+            doctorname: selectedDoctorName, 
+            patientId: userID,
+            slotId: selectedSlotID,
+            slotTime: selectedSlotTime, 
+            description: document.getElementById("visitReason").value
+        };
+
+console.log(requestData)
+        try {
+            const response = await fetch("http://localhost:5000/api/form/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to book slot");
+            }
+            const data = await response.json()
+            console.log(data)
+            alert(`${data.message}`);
+            document.getElementById("bookingForm").reset(); // Reset form after submission
+
+        } catch (error) {
+            console.error("Error booking slot:", error);
+            alert("Error booking slot. Please try again.");
+        }
+    });
+
+    async function fetchSlots(doctorId) {
+    try {
+        console.log(`Fetching slots for doctor: ${doctorId}`);
+        const response = await fetch(`http://localhost:5000/api/form/available-slots/${doctorId}`);
+        if (!response.ok) throw new Error("Failed to fetch slots");
+
+        const data = await response.json();
+        console.log("Available slots:", data.availableSlots);
+
+        const slotsContainer = document.getElementById("slotsContainer");
+        slotsContainer.innerHTML = ""; // Clear previous slots
+
+        if (data.availableSlots.length === 0) {
+            slotsContainer.innerHTML = "<p>No slots available.</p>";
+            return;
+        }
+
+        data.availableSlots.forEach(slot => {
+            const slotButton = document.createElement("button");
+            slotButton.textContent = slot.time;
+            slotButton.classList.add("slot-button"); // Add CSS class
+            slotButton.onclick = () => selectSlot(slot);
+            slotsContainer.appendChild(slotButton);
+        });
+    } catch (error) {
+        console.error("Error fetching slots:", error);
+    }
+}
+
+function selectSlot(slot) {
+    console.log("Selected Slot:", slot);
+    selectedSlotTime = slot.time;
+    selectedSlotID = slot.slotId
+    document.getElementById("selectedSlot").textContent = `Selected Slot: ${slot.time}`;
+}
+</script>
+</body>
+</html>
+

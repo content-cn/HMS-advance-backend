@@ -95,9 +95,12 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.token) {
+                console.log(data)
+                if (data.userId) {
                     localStorage.setItem('token', data.token);
-                    window.location.href = 'dashboard.html'; // Redirect to a protected page
+                    localStorage.setItem('userID', data.userId);
+
+                    // window.location.href = 'dashboard.html'; // Redirect to a protected page
                 } else {
                     alert('Signin failed');
                 }

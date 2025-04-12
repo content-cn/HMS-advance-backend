@@ -44,6 +44,7 @@ app.use('/api/auth',authRoutes)
 app.use('/api/form',formRoute)
 app.use('/api/adminauth',adminlogin)
 app.use('/api/admin/doctorlist',doctorlistRoutes)
+app.use('/api/doctorlist',doctorlistRoutes)
 
 // Define the port
 const PORT = process.env.PORT || 5000;

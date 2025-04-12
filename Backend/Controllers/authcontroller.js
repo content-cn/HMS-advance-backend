@@ -1,5 +1,5 @@
 const User = require('../Models/authmodels');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { signupMessage } = require("../config/email");
 const { check, validationResult } = require('express-validator'); // Import express-validator for route validation
@@ -85,7 +85,7 @@ const signin = async (req, res) => {
         const token = jwt.sign({ userId: user._id, email: user.email }, SECRET_KEY, { expiresIn: "1h" });
         console.log("token generated")
 
-        res.status(200).json({ message: "Login successful", token });
+        res.status(200).json({ message: "Login successful", token  ,userId:user._id });
     } catch (error) {
         res.status(500).send(error);
     }

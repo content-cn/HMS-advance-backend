@@ -75,7 +75,16 @@
             <!-- Specialty -->
             <div class="form-group">
                 <label for="specialty">Specialty</label>
-                <input type="text" class="form-control" id="specialty" placeholder="Enter specialty" required>
+                <select class="form-control" id="specialty" required>
+                    <option value="">Select Specialty</option>
+                    <option value="Allergist">Allergist</option>
+                    <option value="Anesthesiologist">Anesthesiologist</option>
+                    <option value="Cardiologist">Cardiologist</option>
+                    <option value="Dermatologist">Dermatologist</option>
+                    <option value="Endocrinologist">Endocrinologist</option>
+                    <option value="Gastroenterologist">Gastroenterologist</option>
+                    <option value="Nephrologist">Nephrologist</option>
+                </select>
             </div>
 
             <!-- Phone Number -->
@@ -105,7 +114,13 @@
             <!-- Availability -->
             <div class="form-group">
                 <label for="availability">Availability</label>
-                <input type="text" class="form-control" id="availability" placeholder="Enter availability" required>
+                <select class="form-control" id="availability" required>
+                    <option value="">Select Availability</option>
+                    <option value="Morning">Morning [8 AM - 11 AM]</option>
+                    <option value="Afternoon">Afternoon [12 PM - 4 PM]</option>
+                    <option value="Evening">Evening [4 PM - 7 PM]</option>
+                    <option value="FullDay">Full Day [9 AM - 6 PM]</option>
+                </select>
             </div>
 
             <!-- Degree -->
@@ -134,8 +149,12 @@
             const dateOfBirth = document.getElementById("dateOfBirth").value;
             const address = document.getElementById("address").value;
             const email = document.getElementById("email").value;
-            const availability = document.getElementById("availability").value;
+            // const availability = document.getElementById("availability").value;
             const degree = document.getElementById("degree").value;
+
+            const availabilitySelect = document.getElementById("availability");
+            const availability = Array.from(availabilitySelect.selectedOptions).map(option => option.value);
+
 
             const doctorData = {
                 name,
@@ -147,9 +166,9 @@
                 availability,
                 degree
             };
-
+console.log(doctorData)
             try {
-                const response = await fetch("http://localhost:5000/api/admin/doctorlist/doctors", {
+                const response = await fetch("http://localhost:5000/api/admin/doctorlist/createdoctors", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(doctorData)

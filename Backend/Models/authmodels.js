@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Import bcrypt for password hashing
+const bcrypt = require('bcrypt'); // Import bcrypt for password hashing
 
 // Define the User Schema with Validation
 const authSchema = new mongoose.Schema({

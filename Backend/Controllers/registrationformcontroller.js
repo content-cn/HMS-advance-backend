@@ -1,6 +1,10 @@
 const RegistrationForm = require('../Models/registrationformModel');
 const { updateMessage } = require("../config/email");
 const { checkSchema, validationResult } = require('express-validator'); // Import express-validator for route validation
+const DoctorList = require("../Models/doctorlistModel");
+const Booking =require("../Models/appointmentBookingModels")
+const Slot = require("../Models/slotsModels");
+const mongoose = require("mongoose");
 
 // Validation schema for appointment creation
 const appointmentCreationValidationSchema = checkSchema({
@@ -40,7 +44,7 @@ const appointmentUpdateValidationSchema = checkSchema({
     },
     status: {
         notEmpty: { errorMessage: 'Status is required' },
-        isIn: { options: [['Pending', 'Approved', 'Rejected']], errorMessage: 'Invalid status option' }
+        isIn: { options: [['Pending', 'Accepted', 'Rejected']], errorMessage: 'Invalid status option' }
     }
 });
 
@@ -81,17 +85,134 @@ const validateAppointmentDeletion = async (req, res, next) => {
 };
 
 // Create a new appointment
-exports.createAppointment = [appointmentCreationValidationSchema, validateAppointmentCreation, async (req, res) => {
-    try {
-        const newAppointment = new RegistrationForm(req.body);
-        console.log(req.body)
-        await newAppointment.save();
-        res.status(201).json({ message: 'Appointment created successfully!', data: newAppointment });
-    } catch (error) {
-        console.log(error)
-        res.status(400).json({ error: error.message });
+
+// Create a new appointment with Transaction
+exports.createAppointment = [
+    async (req, res) => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            const { doctorId, slotId, patientId, ...restData } = req.body;
+console.log(req.body)
+            const tomorrowDate = new Date();
+            tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+            const tomorrowDateISO = tomorrowDate.toISOString().split('T')[0];
+
+            // Check if the slot is already booked
+            const existingBooking = await Booking.findOne(
+                { doctorId, slotId, date: new Date(tomorrowDateISO) },
+                null,
+                { session }
+            );
+
+            if (existingBooking) {
+                await session.abortTransaction();
+                session.endSession();
+                return res.status(200).json({ message: "This slot is already booked. Please choose another slot." });
+            }
+
+            // Create booking
+            const newBooking = new Booking({
+                doctorId,
+                slotId,
+                patientId,
+                date: new Date(tomorrowDateISO)
+            });
+            await newBooking.save({ session });
+
+            // Save complete registration form data
+            const newForm = new RegistrationForm({
+                bookingDate: new Date(tomorrowDateISO),
+                ...restData // Store the rest of the req.body fields
+            });
+            await newForm.save({ session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(201).json({
+                message: "Appointment created and registration form saved successfully!",
+                data: {
+                    booking: newBooking,
+                    registrationForm: newForm
+                }
+            });
+
+        } catch (error) {
+            console.error("Error creating appointment:", error);
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
     }
-}];
+];
+
+
+
+
+// Get available slots for a doctor
+exports.getAllSlots = async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+            return res.status(400).json({ error: "Invalid doctor ID format." });
+        }
+
+        // Check if the doctor exists
+        const doctorExists = await DoctorList.findById(doctorId);
+        if (!doctorExists) {
+            return res.status(404).json({ error: "Doctor not found." });
+        }
+
+        // Calculate T+1 date
+        const tomorrowDate = new Date();
+            tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+            const tomorrowDateISO = tomorrowDate.toISOString().split('T')[0]; // Extract YYYY-MM-DD for tomorrow
+
+        // Step 1: Fetch booked slots for the doctor on T+1 date
+        const bookedSlots = await Booking.find(
+            { doctorId, date: { $gte: tomorrowDateISO } }, // Only check future bookings
+            { slotId: 1, _id: 0 } // Fetch only slotId
+        ).lean();
+
+
+         console.log(bookedSlots)
+
+        // Fetch all slots for the doctor
+        const allSlots = await Slot.find({ doctorId }, { time: 1 }).lean(); 
+
+        if (bookedSlots.length === 0) {
+            return res.status(200).json({
+                availableSlots: allSlots.map(slot => ({
+                    slotId: slot._id,  // Include slot ID
+                    time: slot.time
+                }))
+            });
+        }
+
+        // Extract booked slot IDs
+        const bookedSlotIds = bookedSlots.map(slot => slot.slotId.toString());
+
+        // Filter out booked slots and include slotId
+        const availableSlots = allSlots
+            .filter(slot => !bookedSlotIds.includes(slot._id.toString()))
+            .map(slot => ({
+                slotId: slot._id,  // Include slot ID
+                time: slot.time
+            }));
+
+        // Response
+        return res.status(200).json({ availableSlots });
+
+    } catch (error) {
+        console.error("Error fetching slots:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+
 
 // Fetch all appointments
 exports.getAllAppointments = async (req, res) => {

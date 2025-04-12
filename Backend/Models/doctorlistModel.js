@@ -44,7 +44,7 @@ const doctorListSchema = new mongoose.Schema({
     availability: { 
         type: [String], 
         required: [true, 'Availability is required'], 
-        enum: ['Morning', 'Afternoon', 'Evening', 'Full Day'], 
+        enum: ['Morning', 'Afternoon', 'Evening', 'FullDay'], 
         default: 'Full Day' 
     },
     degree: { 
@@ -52,14 +52,7 @@ const doctorListSchema = new mongoose.Schema({
         required: [true, 'Degree is required'], 
         trim: true 
     },
-    slots: [
-        {
-            date: { type: Date, required: true }, // Date of the appointment
-            time: { type: String, required: true }, // Time slot (e.g., '10:00 AM')
-            status: { type: String, enum: ['available', 'booked'], default: 'available' },
-            patientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null } // Stores booked patient
-        }
-    ]
+
 }, { timestamps: true });
 
 // Create the Model

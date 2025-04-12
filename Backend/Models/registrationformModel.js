@@ -46,9 +46,18 @@ const registrationFormSchema = new mongoose.Schema({
         required: [true, 'Doctor name is required'], 
         trim: true 
     },
+    slotTime: { 
+        type: String, 
+        required: [true, 'Slot time is required'], 
+        trim: true 
+    },
+    bookingDate: { 
+        type: Date, 
+        required: [true, 'Booking date is required']
+    },
     status: { 
         type: String, 
-        enum: ['Pending', 'Approved', 'Rejected'], 
+        enum: ['Pending', 'Accepted', 'Rejected'], 
         default: 'Pending', 
         required: true 
     }

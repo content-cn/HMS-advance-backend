@@ -1,6 +1,6 @@
 const DoctorList = require("../Models/doctorlistModel");
-const { check, checkSchema, validationResult } = require('express-validator'); // Import express-validator for route validation
-
+const { checkSchema,check, validationResult } = require('express-validator'); // Import express-validator for route validation
+const Slot = require("../Models/slotsModels");
 //re
 console.log("any error here")
 // Validation schema
@@ -22,7 +22,7 @@ const doctorValidationSchema = checkSchema({
     },
     availability: {
         notEmpty: { errorMessage: 'Availability is required' },
-        isIn: { options: [['Morning', 'Afternoon', 'Evening', 'Full Day']], errorMessage: 'Invalid availability option' }
+        isIn: { options: [['Morning', 'Afternoon', 'Evening', 'FullDay']], errorMessage: 'Invalid availability option' }
     },
     degree: { notEmpty: { errorMessage: 'Degree is required' } }
 });
@@ -39,26 +39,77 @@ const validateDoctor = async (req, res, next) => {
     next(); // Proceed to the controller if validation passes
 };
 
+const generateSlots = (shift, selectedDate) => {
+    const shiftTimings = {
+        Morning: { start: 8, end: 11 },
+        Afternoon: { start: 12, end: 16 },
+        Evening: { start: 16, end: 19 },
+        FullDay: { start: 9, end: 18 }
+    };
 
+    if (!shiftTimings[shift]) return [];
+
+    let { start, end } = shiftTimings[shift];
+    let slots = [];
+    let currentDate = new Date(selectedDate); // Date of booking
+
+    for (let hour = start; hour < end; hour++) {
+        slots.push({
+            date: new Date(currentDate), // Same day
+            time: `${hour}:00 - ${(hour + 1)}:00`,
+            status: 'available',
+            patientId: null
+        });
+    }
+
+    return slots;
+};
 
 exports.createDoctor = async (req, res) => {
     try {
-        const { email} = req.body;
+        const { email, availability } = req.body;
 
         // Check if doctor already exists
         const existingDoctor = await DoctorList.findOne({ email });
         if (existingDoctor) {
-            return res.status(409).json({ error: 'Email already exists' });
+            return res.status(409).json({ error: "Email already exists" });
         }
-     
-        
-    
-        // Create new doctor entry with slots
-        const doctor = new DoctorList({ ...req.body, slots });
-        console.log(doctor)
-        // await doctor.save();
 
-        res.status(201).json({ message: 'Doctor added successfully', data: doctor });
+        // Create new doctor
+        const doctor = new DoctorList(req.body);
+        await doctor.save();
+
+        // Generate slots and store separately
+        let slots = [];
+        if (availability) {
+            availability.forEach((shift) => {
+                const generatedSlots = generateSlots(shift, new Date());
+                generatedSlots.forEach((slot) => {
+                    slots.push({
+                        doctorId: doctor._id,
+                        date: slot.date,
+                        time: slot.time,
+                        status: slot.status,
+                        patientId: slot.patientId
+                    });
+                });
+            });
+        }
+
+        // Save slots in Slot collection
+        await Slot.insertMany(slots);
+
+        // Fetch the saved slots and send in response
+        const savedSlots = await Slot.find({ doctorId: doctor._id });
+
+        res.status(201).json({ 
+            message: "Doctor added successfully", 
+            data: { 
+                doctor, 
+                slots: savedSlots 
+            } 
+        });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
