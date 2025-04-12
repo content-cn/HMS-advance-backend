@@ -3,31 +3,19 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-
+const fs= require('fs')
 const path = require('path');  
-
+// const {isAdminAuthenticated} = require("./middleware/authMiddleware")
 const authRoutes = require('./Routes/authroutes');
 const formRoute = require('./Routes/registrationformRoute')
 const doctorlistRoutes = require("./Routes/doctorlistRoutes")
 const adminlogin= require('./Routes/adminAuthRoutes')
-const rateLimit = require('express-rate-limit');
-const helmet = require("helmet")
+
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.use(helmet()); 
-// Define rate limit settings
-const limiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    max: 2, 
-    message: "Too many requests from this IP, please try again later.",
-    standardHeaders: true, // Return rate limit info in headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
 
 
-// Apply rate limiting to all API routes
-app.use('/api/', limiter);
 
 app.use(express.static(path.join(__dirname, 'frontend')));
 
