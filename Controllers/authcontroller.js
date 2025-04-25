@@ -2,17 +2,32 @@ const User = require('../Models/authmodels');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { signupMessage } = require("../config/email");
-// const {signupMessage} = r
-// const nodemailer = require('nodemailer');
+const { check, validationResult } = require('express-validator'); // Import express-validator for route validation
 
 // Secret key for JWT
 const SECRET_KEY = process.env.JWT_SECRET;
 
-
-// User Signup Controller
+// User Signup Controller with validation
 const signup = async (req, res) => {
     try {
+        console.log("start")
         const { name, email, password } = req.body;
+        console.log("after req body")
+
+        // Validation for signup route
+        await check('name', 'Name is required').not().isEmpty().run(req);
+        await check('name', 'Name must be at least 3 characters long').isLength({ min: 3 }).run(req);
+        await check('email', 'Email is required').not().isEmpty().run(req);
+        await check('email', 'Please enter a valid email').isEmail().run(req);
+        await check('password', 'Password is required').not().isEmpty().run(req);
+        await check('password', 'Password must be at least 6 characters long').isLength({ min: 6 }).run(req);
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        console.log("after validation")
+
 
         // Check if the user already exists
         const existingUser = await User.findOne({ email });
@@ -31,9 +46,19 @@ const signup = async (req, res) => {
     }
 };
 
-// User Signin Controller
+// User Signin Controller with validation
 const signin = async (req, res) => {
     try {
+        // Validation for signin route
+        await check('email', 'Email is required').not().isEmpty().run(req);
+        await check('email', 'Please enter a valid email').isEmail().run(req);
+        await check('password', 'Password is required').not().isEmpty().run(req);
+
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { email, password } = req.body;
         console.log("Received Body:", req.body);
 
@@ -60,7 +85,7 @@ const signin = async (req, res) => {
         const token = jwt.sign({ userId: user._id, email: user.email }, SECRET_KEY, { expiresIn: "1h" });
         console.log("token generated")
 
-        res.status(200).json({ message: "Login successful", token });
+        res.status(200).json({ message: "Login successful", token  ,userId:user._id });
     } catch (error) {
         res.status(500).send(error);
     }
