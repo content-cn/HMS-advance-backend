@@ -20,4 +20,6 @@ router.get('/:id', getAppointmentById);
 router.put('/:id', updateAppointment);
 router.delete('/:id',  deleteAppointment);
 
+
+
 module.exports = router;

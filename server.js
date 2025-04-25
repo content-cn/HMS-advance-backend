@@ -12,6 +12,8 @@ const formRoute = require('./Routes/registrationformRoute');
 const doctorlistRoutes = require("./Routes/doctorlistRoutes");
 const adminlogin = require('./Routes/adminAuthRoutes');
 
+const uploadRoute = require('./routes/uploadRoutes.js');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -24,9 +26,12 @@ app.use(cors());
 
 // Serve static frontend
 app.use(express.static(path.join(__dirname, 'frontend')));
+
+app.use('/api', uploadRoute)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
+
 app.get('/admin-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'admin-dashboard', 'adminDashboard.html'));
 });
@@ -44,6 +49,9 @@ app.use('/api/adminauth', adminlogin);
 app.use('/api/admin/doctorlist', doctorlistRoutes);
 app.use('/api/doctorlist', doctorlistRoutes);
 
+// Add this with your other app.use statements
+// app.use('/api/upload', uploadRoutes);
+
 // MongoDB + Server Init
 const PORT = process.env.PORT || 5000;
 mongoose.connect(process.env.MONGODB_URI, {
@@ -57,3 +65,5 @@ mongoose.connect(process.env.MONGODB_URI, {
 }).catch(err => {
   console.error('❌ MongoDB connection error:', err);
 });
+
+

@@ -87,14 +87,76 @@ const validateAppointmentDeletion = async (req, res, next) => {
 // Create a new appointment
 
 // Create a new appointment with Transaction
+// exports.createAppointment = [
+//     async (req, res) => {
+//         const session = await mongoose.startSession();
+//         session.startTransaction();
+
+//         try {
+//             const { doctorId, slotId, patientId, ...restData } = req.body;
+// console.log(req.body)
+//             const tomorrowDate = new Date();
+//             tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+//             const tomorrowDateISO = tomorrowDate.toISOString().split('T')[0];
+
+//             // Check if the slot is already booked
+//             const existingBooking = await Booking.findOne(
+//                 { doctorId, slotId, date: new Date(tomorrowDateISO) },
+//                 null,
+//                 { session }
+//             );
+
+//             if (existingBooking) {
+//                 await session.abortTransaction();
+//                 session.endSession();
+//                 return res.status(200).json({ message: "This slot is already booked. Please choose another slot." });
+//             }
+
+//             // Create booking
+//             const newBooking = new Booking({
+//                 doctorId,
+//                 slotId,
+//                 patientId,
+//                 date: new Date(tomorrowDateISO)
+//             });
+//             await newBooking.save({ session });
+
+//             // Save complete registration form data
+//             const newForm = new RegistrationForm({
+//                 bookingDate: new Date(tomorrowDateISO),
+//                 ...restData // Store the rest of the req.body fields
+//             });
+//             await newForm.save({ session });
+
+//             await session.commitTransaction();
+//             session.endSession();
+
+//             return res.status(201).json({
+//                 message: "Appointment created and registration form saved successfully!",
+//                 data: {
+//                     booking: newBooking,
+//                     registrationForm: newForm
+//                 }
+//             });
+
+//         } catch (error) {
+//             console.error("Error creating appointment:", error);
+//             await session.abortTransaction();
+//             session.endSession();
+//             return res.status(500).json({ error: "Internal Server Error" });
+//         }
+//     }
+// ];
+// Update to createAppointment function in registrationformcontroller.js
 exports.createAppointment = [
     async (req, res) => {
         const session = await mongoose.startSession();
         session.startTransaction();
 
         try {
-            const { doctorId, slotId, patientId, ...restData } = req.body;
-console.log(req.body)
+            const { doctorId, slotId, patientId, medicalDocumentUrl, ...restData } = req.body;
+            console.log(req.body);
+
             const tomorrowDate = new Date();
             tomorrowDate.setDate(tomorrowDate.getDate() + 1);
             const tomorrowDateISO = tomorrowDate.toISOString().split('T')[0];
@@ -121,11 +183,18 @@ console.log(req.body)
             });
             await newBooking.save({ session });
 
-            // Save complete registration form data
-            const newForm = new RegistrationForm({
+            // Save complete registration form data with document URL if available
+            const formData = {
                 bookingDate: new Date(tomorrowDateISO),
-                ...restData // Store the rest of the req.body fields
-            });
+                ...restData
+            };
+            
+            // Add medical document URL if it exists
+            if (medicalDocumentUrl) {
+                formData.medicalDocumentUrl = medicalDocumentUrl;
+            }
+            
+            const newForm = new RegistrationForm(formData);
             await newForm.save({ session });
 
             await session.commitTransaction();
@@ -264,3 +333,4 @@ exports.deleteAppointment = [appointmentDeletionValidationSchema, validateAppoin
         res.status(500).json({ error: error.message });
     }
 }];
+

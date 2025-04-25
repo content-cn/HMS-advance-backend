@@ -1,4 +1,4 @@
-// models/userModel.js
+// models/registrationformModel.js
 const mongoose = require('mongoose');
 
 // Define the User Schema
@@ -16,7 +16,7 @@ const registrationFormSchema = new mongoose.Schema({
         match: [/.+@.+\..+/, 'Please enter a valid email address']
     },
     phonenumber: { 
-        type: String, // Storing phone number as a string to preserve leading zeros
+        type: String,
         required: [true, 'Phone number is required'], 
         trim: true,
         match: [/^\d{10,15}$/, 'Phone number must be between 10 to 15 digits']
@@ -26,7 +26,7 @@ const registrationFormSchema = new mongoose.Schema({
         required: [true, 'Date of birth is required'],
         validate: {
             validator: function (value) {
-                return value < new Date(); // DOB must be in the past
+                return value < new Date();
             },
             message: 'Date of birth must be a past date'
         }
@@ -60,9 +60,13 @@ const registrationFormSchema = new mongoose.Schema({
         enum: ['Pending', 'Accepted', 'Rejected'], 
         default: 'Pending', 
         required: true 
+    },
+    medicalDocumentUrl: {
+        type: String,
+        required: false
     }
 }, { timestamps: true });
 
 // Create a Model
 const RegistrationForm = mongoose.model('RegistrationForm', registrationFormSchema);
-module.exports = RegistrationForm; // Export the model
+module.exports = RegistrationForm;
